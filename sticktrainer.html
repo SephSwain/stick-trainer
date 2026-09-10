@@ -1,0 +1,929 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#000000">
+  <title>Stick Trainer</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --black: #000000;
+      --panel: #090b10;
+      --white: #ffffff;
+      --cyan: #00eaff;
+      --yellow: #fff200;
+      --pink: #ff2bd6;
+      --green: #00f56a;
+      --red: #ff174f;
+    }
+
+    * { box-sizing: border-box; }
+    html, body { width: 100%; min-width: 320px; min-height: 100%; }
+
+    body {
+      margin: 0;
+      overflow: hidden;
+      background:
+        radial-gradient(circle at 43% 48%, rgba(91, 0, 210, 0.3), transparent 50%),
+        var(--black);
+      color: var(--white);
+      font-family: "Segoe UI Variable", "Segoe UI", system-ui, sans-serif;
+    }
+
+    button { font: inherit; }
+
+    button:focus-visible {
+      outline: 4px solid var(--yellow);
+      outline-offset: 3px;
+    }
+
+    .app {
+      width: 100%;
+      height: 100vh;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) clamp(170px, 18vw, 230px);
+    }
+
+    .training {
+      min-width: 0;
+      min-height: 0;
+      padding: clamp(18px, 3vh, 34px) clamp(18px, 3vw, 42px);
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
+    }
+
+    .active-exercise {
+      min-height: 112px;
+      text-align: center;
+    }
+
+    .active-exercise h1 {
+      margin: 0;
+      color: var(--white);
+      font-size: clamp(3rem, 7vh, 5.4rem);
+      line-height: 1;
+      letter-spacing: -0.055em;
+      text-shadow: 0 0 28px rgba(0, 234, 255, 0.42);
+    }
+
+    .timer {
+      margin-top: 7px;
+      color: var(--cyan);
+      font: 800 clamp(1.05rem, 2.3vh, 1.45rem)/1 ui-monospace, "Cascadia Mono", monospace;
+      letter-spacing: 0.04em;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .visual {
+      min-height: 0;
+      display: grid;
+      place-items: center;
+    }
+
+    .range {
+      --corridor-start: 44.48%;
+      --corridor-size: 11.04%;
+      --target-depth: 9.52%;
+      width: min(64vmin, 650px, calc(100vw - 290px));
+      aspect-ratio: 1;
+      overflow: hidden;
+      position: relative;
+      border: 5px solid var(--cyan);
+      border-radius: 50%;
+      background: rgba(255, 23, 79, 0.6);
+      box-shadow:
+        inset 0 0 65px rgba(80, 0, 18, 0.58),
+        0 0 20px rgba(0, 234, 255, 0.88),
+        0 0 75px rgba(0, 234, 255, 0.24);
+      isolation: isolate;
+    }
+
+    .range::after {
+      content: "";
+      position: absolute;
+      z-index: 3;
+      inset: 0;
+      border-radius: 50%;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .range.flash-hit::after {
+      background: var(--green);
+      animation: feedback-flash 190ms ease-out;
+    }
+
+    .range.flash-error::after {
+      background: var(--red);
+      animation: feedback-flash 230ms ease-out;
+    }
+
+    @keyframes feedback-flash {
+      0% { opacity: 0.82; }
+      100% { opacity: 0; }
+    }
+
+    .allowed-zone,
+    .target-zone {
+      position: absolute;
+      z-index: 1;
+      background: var(--green);
+    }
+
+    .allowed-zone {
+      box-shadow: inset 0 0 34px rgba(0, 72, 28, 0.42);
+    }
+
+    .target-zone {
+      z-index: 2;
+      background: #37ff00;
+      box-shadow: 0 0 28px rgba(55, 255, 0, 0.95);
+    }
+
+    .range.left .allowed-zone { left: 0; top: var(--corridor-start); width: 50%; height: var(--corridor-size); }
+    .range.right .allowed-zone { right: 0; top: var(--corridor-start); width: 50%; height: var(--corridor-size); }
+    .range.up .allowed-zone { left: var(--corridor-start); top: 0; width: var(--corridor-size); height: 50%; }
+    .range.down .allowed-zone { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: 50%; }
+
+    .range.left .target-zone { left: 0; top: var(--corridor-start); width: var(--target-depth); height: var(--corridor-size); border-right: 3px solid var(--white); }
+    .range.right .target-zone { right: 0; top: var(--corridor-start); width: var(--target-depth); height: var(--corridor-size); border-left: 3px solid var(--white); }
+    .range.up .target-zone { left: var(--corridor-start); top: 0; width: var(--corridor-size); height: var(--target-depth); border-bottom: 3px solid var(--white); }
+    .range.down .target-zone { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: var(--target-depth); border-top: 3px solid var(--white); }
+
+    .deadzone {
+      width: 6.5%;
+      aspect-ratio: 1;
+      position: absolute;
+      z-index: 3;
+      left: 50%;
+      top: 50%;
+      border: 2px dashed rgba(255, 255, 255, 0.38);
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.2);
+      transform: translate(-50%, -50%);
+    }
+
+    .position {
+      width: clamp(27px, 5vmin, 44px);
+      aspect-ratio: 1;
+      position: absolute;
+      z-index: 4;
+      left: 50%;
+      top: 50%;
+      border: 4px solid var(--pink);
+      border-radius: 50%;
+      background: var(--yellow);
+      box-shadow:
+        0 0 0 8px rgba(255, 43, 214, 0.25),
+        0 0 24px rgba(255, 43, 214, 0.95),
+        0 0 42px rgba(255, 242, 0, 0.88);
+      transform: translate(-50%, -50%);
+      will-change: left, top;
+    }
+
+    .position.invalid {
+      border-color: var(--white);
+      background: var(--red);
+      box-shadow: 0 0 0 9px rgba(255, 23, 79, 0.3), 0 0 34px var(--red);
+    }
+
+    .position.reached {
+      border-color: var(--white);
+      background: var(--green);
+      box-shadow: 0 0 0 9px rgba(0, 245, 106, 0.3), 0 0 38px var(--green);
+    }
+
+    .repetitions {
+      min-height: 42px;
+      padding-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: clamp(7px, 1vw, 12px);
+    }
+
+    .repetition {
+      width: clamp(13px, 1.8vmin, 18px);
+      aspect-ratio: 1;
+      border: 2px solid rgba(255, 255, 255, 0.65);
+      border-radius: 50%;
+      background: transparent;
+    }
+
+    .repetition.done {
+      border-color: var(--yellow);
+      background: var(--yellow);
+      box-shadow: 0 0 13px rgba(255, 242, 0, 0.75);
+    }
+
+    .settings {
+      width: min(690px, 100%);
+      margin: 8px auto 0;
+      padding: 11px 16px 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 15px;
+      background: rgba(10, 12, 18, 0.92);
+      display: grid;
+      grid-template-columns: minmax(250px, 1fr);
+      align-items: center;
+      gap: 24px;
+    }
+
+    .tolerance-setting { min-width: 0; }
+
+    .setting-control {
+      padding: 5px 8px;
+      border-radius: 10px;
+      outline: 2px solid transparent;
+      outline-offset: 2px;
+    }
+
+    .setting-control.selected {
+      outline-color: var(--cyan);
+      background: rgba(0, 234, 255, 0.08);
+    }
+
+    .setting-control.editing {
+      outline: 4px solid var(--yellow);
+      background: rgba(255, 242, 0, 0.1);
+      box-shadow: 0 0 20px rgba(255, 242, 0, 0.22);
+    }
+
+    .setting-head {
+      margin-bottom: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 16px;
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .setting-head output { color: var(--yellow); font-variant-numeric: tabular-nums; }
+
+    input[type="range"] {
+      width: 100%;
+      margin: 0;
+      accent-color: var(--cyan);
+      cursor: pointer;
+    }
+
+    .range-scale {
+      display: flex;
+      justify-content: space-between;
+      color: rgba(255, 255, 255, 0.48);
+      font: 0.62rem/1 ui-monospace, "Cascadia Mono", monospace;
+    }
+
+    .settings input:disabled { cursor: not-allowed; opacity: 0.45; }
+
+    .exercise-list {
+      padding: clamp(18px, 3vh, 32px) clamp(13px, 1.5vw, 22px);
+      border-left: 2px solid rgba(0, 234, 255, 0.35);
+      background: rgba(7, 8, 13, 0.94);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 14px;
+    }
+
+    .exercise {
+      width: 100%;
+      min-height: 106px;
+      padding: 12px 14px;
+      border: 2px solid rgba(255, 255, 255, 0.27);
+      border-radius: 17px;
+      background: #11131b;
+      color: var(--white);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      justify-content: center;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+    }
+
+    .exercise:hover { border-color: var(--cyan); transform: translateX(-3px); }
+
+    .exercise.active {
+      border-color: var(--cyan);
+      background: var(--cyan);
+      color: var(--black);
+      box-shadow: 0 0 25px rgba(0, 234, 255, 0.38);
+    }
+
+    .exercise.active.running {
+      border-color: var(--yellow);
+      box-shadow: 0 0 0 3px var(--yellow), 0 0 28px rgba(255, 242, 0, 0.42);
+    }
+
+    .exercise.active.unfocused {
+      border-color: rgba(0, 234, 255, 0.62);
+      background: #171b25;
+      color: var(--white);
+      box-shadow: none;
+    }
+
+    .exercise.active.unfocused .exercise-meta,
+    .exercise.active.unfocused .exercise-times { color: rgba(255, 255, 255, 0.62); }
+
+    .exercise-name {
+      font-size: clamp(1.6rem, 3vw, 2.15rem);
+      font-weight: 850;
+      line-height: 1;
+      letter-spacing: -0.04em;
+    }
+
+    .exercise-meta {
+      margin-top: 8px;
+      color: rgba(255, 255, 255, 0.65);
+      font: 700 0.76rem/1 ui-monospace, "Cascadia Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .exercise-times {
+      margin-top: 7px;
+      color: rgba(255, 255, 255, 0.62);
+      font: 650 0.66rem/1.25 ui-monospace, "Cascadia Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      text-align: left;
+    }
+
+    .exercise.active .exercise-meta,
+    .exercise.active .exercise-times { color: rgba(0, 0, 0, 0.72); }
+
+    @media (max-height: 650px) {
+      .active-exercise { min-height: 77px; }
+      .active-exercise h1 { font-size: 2.7rem; }
+      .exercise-list { gap: 9px; }
+      .exercise { min-height: 72px; }
+      .exercise-name { font-size: 1.55rem; }
+      .exercise-times { display: none; }
+      .settings { padding-block: 7px; }
+      .range { width: min(58vmin, 530px, calc(100vw - 270px)); }
+    }
+
+    @media (max-width: 620px) {
+      .app { grid-template-columns: minmax(0, 1fr) 138px; }
+      .training { padding-inline: 10px; }
+      .exercise-list { padding-inline: 9px; }
+      .exercise { min-height: 78px; padding: 10px; border-radius: 13px; }
+      .exercise-name { font-size: 1.45rem; }
+      .exercise-meta { font-size: 0.64rem; }
+      .settings { grid-template-columns: 1fr; gap: 8px; padding-inline: 10px; }
+      .range { width: min(62vmin, calc(100vw - 160px)); }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      .exercise { transition: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <section class="training" aria-label="Active stick exercise">
+      <header class="active-exercise">
+        <h1 id="activeName">10 ↑</h1>
+        <div class="timer" id="timer">00:00.0</div>
+      </header>
+
+      <div class="visual">
+        <div class="range up" id="range" aria-label="Green allowed corridor and red forbidden area">
+          <div class="allowed-zone"></div>
+          <div class="target-zone"></div>
+          <div class="deadzone"></div>
+          <div class="position" id="position"></div>
+        </div>
+      </div>
+
+      <div class="repetitions" id="repetitions" aria-label="0 of 10 repetitions"></div>
+
+      <section class="settings" aria-label="Training settings">
+        <label class="tolerance-setting setting-control" id="toleranceSetting" for="tolerance">
+          <span class="setting-head"><span>Tolerance</span><output id="toleranceValue" for="tolerance">12 %</output></span>
+          <input id="tolerance" type="range" min="0" max="20" step="2" value="12" list="toleranceSteps">
+          <datalist id="toleranceSteps">
+            <option value="0"></option><option value="2"></option><option value="4"></option><option value="6"></option>
+            <option value="8"></option><option value="10"></option><option value="12"></option><option value="14"></option>
+            <option value="16"></option><option value="18"></option><option value="20"></option>
+          </datalist>
+          <span class="range-scale" aria-hidden="true"><span>0</span><span>2</span><span>4</span><span>6</span><span>8</span><span>10</span><span>12</span><span>14</span><span>16</span><span>18</span><span>20</span></span>
+        </label>
+
+      </section>
+    </section>
+
+    <nav class="exercise-list" id="exerciseList" aria-label="Exercises"></nav>
+  </main>
+
+  <script>
+    (() => {
+      "use strict";
+
+      const REPETITION_GOAL = 10;
+      const DEADZONE = 0.07;
+      const STORAGE_KEY = "stick-trainer-v1-times";
+
+      const exercises = [
+        { id: "up", name: "10 ↑", dx: 0, dy: -1 },
+        { id: "down", name: "10 ↓", dx: 0, dy: 1 },
+        { id: "left", name: "10 ←", dx: -1, dy: 0 },
+        { id: "right", name: "10 →", dx: 1, dy: 0 }
+      ].map(exercise => ({
+        ...exercise,
+        repetitions: 0,
+        elapsed: 0,
+        startedAt: 0,
+        running: false,
+        complete: false,
+        bestTime: null
+      }));
+
+      const ui = {
+        activeName: document.getElementById("activeName"),
+        timer: document.getElementById("timer"),
+        range: document.getElementById("range"),
+        position: document.getElementById("position"),
+        repetitions: document.getElementById("repetitions"),
+        exerciseList: document.getElementById("exerciseList"),
+        tolerance: document.getElementById("tolerance"),
+        toleranceValue: document.getElementById("toleranceValue"),
+        toleranceSetting: document.getElementById("toleranceSetting")
+      };
+
+      const state = {
+        activeIndex: 0,
+        mode: "select",
+        focusArea: "exercises",
+        settingIndex: 0,
+        editingSetting: false,
+        phase: "outbound",
+        attemptActive: false,
+        attemptInvalid: false,
+        targetValid: false,
+        controllerIndex: null,
+        previousButtons: [],
+        x: 0,
+        y: 0
+      };
+
+      const audio = {
+        context: null,
+        hit: null,
+        error: null,
+        complete: null,
+        best: null
+      };
+
+      const exerciseButtons = [];
+      const repetitionDots = [];
+
+      function clamp(value) {
+        return Math.max(-1, Math.min(1, Number(value) || 0));
+      }
+
+      function formatTime(milliseconds) {
+        const tenths = Math.max(0, Math.floor(milliseconds / 100));
+        const minutes = Math.floor(tenths / 600);
+        const seconds = Math.floor((tenths % 600) / 10);
+        return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}.${tenths % 10}`;
+      }
+
+      function currentElapsed(exercise, now) {
+        return exercise.running ? now - exercise.startedAt : exercise.elapsed;
+      }
+
+      function recordTime(value) {
+        return Number.isFinite(value) && value > 0 ? formatTime(value) : "—";
+      }
+
+      function loadRecords() {
+        try {
+          const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
+          exercises.forEach(exercise => {
+            const saved = records[exercise.id];
+            if (!saved) return;
+            exercise.bestTime = Number.isFinite(saved.bestTime) && saved.bestTime > 0 ? saved.bestTime : null;
+          });
+        } catch (_) {
+          // Training still works when browser storage is unavailable.
+        }
+      }
+
+      function saveRecords() {
+        const records = {};
+        exercises.forEach(exercise => {
+          records[exercise.id] = { bestTime: exercise.bestTime };
+        });
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
+        } catch (_) {
+          // Training still works when browser storage is unavailable.
+        }
+      }
+
+      function tolerance() {
+        return Number(ui.tolerance.value) / 100;
+      }
+
+      function updateToleranceGraphic() {
+        const value = tolerance();
+        const corridorSize = Math.max(0.45, value * 92);
+        const corridorStart = 50 - corridorSize / 2;
+        const targetDepth = 4 + value * 46;
+        ui.toleranceValue.textContent = `${ui.tolerance.value} %`;
+        ui.range.style.setProperty("--corridor-start", `${corridorStart}%`);
+        ui.range.style.setProperty("--corridor-size", `${corridorSize}%`);
+        ui.range.style.setProperty("--target-depth", `${targetDepth}%`);
+      }
+
+      function createSoundBuffer(context, kind) {
+        const duration = kind === "best" ? 0.58 : kind === "complete" ? 0.42 : kind === "hit" ? 0.09 : 0.085;
+        const length = Math.ceil(context.sampleRate * duration);
+        const buffer = context.createBuffer(1, length, context.sampleRate);
+        const channel = buffer.getChannelData(0);
+
+        for (let index = 0; index < length; index += 1) {
+          const time = index / context.sampleRate;
+          const progress = index / length;
+          if (kind === "complete" || kind === "best") {
+            const frequencies = kind === "best" ? [247, 330, 415, 494] : [220, 277, 330];
+            const noteIndex = Math.floor(time / 0.14);
+            const localTime = time - noteIndex * 0.14;
+            const localProgress = localTime / 0.12;
+            if (noteIndex < frequencies.length && localProgress >= 0 && localProgress <= 1) {
+              const envelope = Math.min(1, localTime / 0.003) * Math.pow(1 - localProgress, 1.55);
+              channel[index] = (
+                Math.sin(Math.PI * 2 * frequencies[noteIndex] * localTime) +
+                Math.sin(Math.PI * 4 * frequencies[noteIndex] * localTime) * 0.2
+              ) * envelope * 0.3;
+            }
+          } else if (kind === "hit") {
+            const attack = Math.min(1, time / 0.002);
+            const envelope = attack * Math.pow(1 - progress, 2);
+            const frequency = 360 + progress * 220;
+            channel[index] = (
+              Math.sin(Math.PI * 2 * frequency * time) +
+              Math.sin(Math.PI * 4 * frequency * time) * 0.28
+            ) * envelope * 0.3;
+          } else {
+            const attack = Math.min(1, time / 0.002);
+            const envelope = attack * Math.pow(1 - progress, 2);
+            channel[index] = (
+              Math.sin(Math.PI * 2 * 92 * time) +
+              Math.sign(Math.sin(Math.PI * 2 * 58 * time)) * 0.32
+            ) * envelope * 0.25;
+          }
+        }
+
+        return buffer;
+      }
+
+      function ensureAudio() {
+        if (!audio.context) {
+          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+          if (!AudioContextClass) return null;
+          try {
+            audio.context = new AudioContextClass({ latencyHint: "interactive" });
+            audio.hit = createSoundBuffer(audio.context, "hit");
+            audio.error = createSoundBuffer(audio.context, "error");
+            audio.complete = createSoundBuffer(audio.context, "complete");
+            audio.best = createSoundBuffer(audio.context, "best");
+          } catch (_) {
+            return null;
+          }
+        }
+
+        if (audio.context.state === "suspended") audio.context.resume().catch(() => {});
+        return audio.context;
+      }
+
+      function playFeedback(kind) {
+        const context = ensureAudio();
+        const buffer = audio[kind];
+        if (!context || !buffer) return;
+
+        const play = () => {
+          if (context.state !== "running") return;
+          const source = context.createBufferSource();
+          source.buffer = buffer;
+          source.connect(context.destination);
+          source.start(context.currentTime);
+        };
+
+        if (context.state === "running") play();
+        else context.resume().then(play).catch(() => {});
+      }
+
+      function flashRange(kind) {
+        ui.range.classList.remove("flash-hit", "flash-error");
+        void ui.range.offsetWidth;
+        ui.range.classList.add(kind === "hit" ? "flash-hit" : "flash-error");
+      }
+
+      function giveFeedback(kind) {
+        playFeedback(kind);
+        flashRange(kind);
+      }
+
+      function createInterface() {
+        exercises.forEach((exercise, index) => {
+          const button = document.createElement("button");
+          button.className = "exercise";
+          button.type = "button";
+          button.innerHTML = `<span class="exercise-name">${exercise.name}</span><span class="exercise-meta">0/10 · 00:00.0</span><span class="exercise-times">Best —</span>`;
+          button.addEventListener("click", () => {
+            ensureAudio();
+            state.focusArea = "exercises";
+            state.editingSetting = false;
+            selectExercise(index);
+          });
+          ui.exerciseList.appendChild(button);
+          exerciseButtons.push(button);
+        });
+
+        for (let index = 0; index < REPETITION_GOAL; index += 1) {
+          const dot = document.createElement("span");
+          dot.className = "repetition";
+          ui.repetitions.appendChild(dot);
+          repetitionDots.push(dot);
+        }
+
+        selectExercise(0);
+        ui.tolerance.addEventListener("input", updateToleranceGraphic);
+        ui.toleranceSetting.addEventListener("pointerdown", () => {
+          state.focusArea = "settings";
+          state.settingIndex = 0;
+          state.editingSetting = false;
+        });
+        updateToleranceGraphic();
+        document.addEventListener("pointerdown", ensureAudio, { once: true });
+      }
+
+      function resetAttempt() {
+        state.phase = "outbound";
+        state.attemptActive = false;
+        state.attemptInvalid = false;
+        state.targetValid = false;
+      }
+
+      function selectExercise(index) {
+        if (state.mode === "running") return;
+        const now = performance.now();
+        state.activeIndex = index;
+        resetAttempt();
+
+        const exercise = exercises[index];
+        state.mode = exercise.complete ? "complete" : "select";
+        ui.activeName.textContent = exercise.name;
+        ui.range.className = `range ${exercise.id}`;
+        renderState(now);
+      }
+
+      function navigationItems() {
+        return [
+          ...exerciseButtons.map((element, index) => ({ type: "exercise", index, element })),
+          { type: "setting", index: 0, element: ui.toleranceSetting }
+        ];
+      }
+
+      function currentNavigationItem() {
+        return state.focusArea === "settings"
+          ? { type: "setting", index: 0, element: ui.toleranceSetting }
+          : { type: "exercise", index: state.activeIndex, element: exerciseButtons[state.activeIndex] };
+      }
+
+      function focusNavigationItem(item) {
+        state.editingSetting = false;
+        if (item.type === "exercise") {
+          state.focusArea = "exercises";
+          selectExercise(item.index);
+        } else {
+          state.focusArea = "settings";
+          state.settingIndex = item.index;
+          renderState(performance.now());
+        }
+      }
+
+      function moveFocus(dx, dy) {
+        if (state.mode === "running" || state.editingSetting) return;
+        const current = currentNavigationItem();
+        const currentRect = current.element.getBoundingClientRect();
+        const currentX = currentRect.left + currentRect.width / 2;
+        const currentY = currentRect.top + currentRect.height / 2;
+
+        const candidates = navigationItems()
+          .filter(item => item.element !== current.element)
+          .map(item => {
+            const rect = item.element.getBoundingClientRect();
+            const offsetX = rect.left + rect.width / 2 - currentX;
+            const offsetY = rect.top + rect.height / 2 - currentY;
+            const forward = offsetX * dx + offsetY * dy;
+            const sideways = Math.abs(offsetX * dy - offsetY * dx);
+            return { item, forward, score: forward + sideways * 2.2 };
+          })
+          .filter(candidate => candidate.forward > 1)
+          .sort((a, b) => a.score - b.score);
+
+        if (candidates.length) focusNavigationItem(candidates[0].item);
+      }
+
+      function adjustTolerance(direction) {
+        const nextValue = Math.max(0, Math.min(20, Number(ui.tolerance.value) + direction * 2));
+        ui.tolerance.value = String(nextValue);
+        updateToleranceGraphic();
+      }
+
+      function startTraining(now) {
+        const exercise = exercises[state.activeIndex];
+        exercise.repetitions = 0;
+        exercise.elapsed = 0;
+        exercise.startedAt = now;
+        exercise.running = true;
+        exercise.complete = false;
+        state.mode = "running";
+        resetAttempt();
+        ensureAudio();
+      }
+
+      function cancelTraining() {
+        if (state.mode !== "running") return;
+        const exercise = exercises[state.activeIndex];
+        exercise.repetitions = 0;
+        exercise.elapsed = 0;
+        exercise.startedAt = 0;
+        exercise.running = false;
+        exercise.complete = false;
+        state.mode = "select";
+        resetAttempt();
+      }
+
+      function finishRepetition(exercise, now) {
+        exercise.repetitions += 1;
+        if (exercise.repetitions >= REPETITION_GOAL) {
+          exercise.repetitions = REPETITION_GOAL;
+          exercise.elapsed = now - exercise.startedAt;
+          exercise.running = false;
+          exercise.complete = true;
+          state.mode = "complete";
+          const beatBest = Number.isFinite(exercise.bestTime) && exercise.elapsed < exercise.bestTime;
+          if (!Number.isFinite(exercise.bestTime) || exercise.elapsed < exercise.bestTime) {
+            exercise.bestTime = exercise.elapsed;
+          }
+          saveRecords();
+          playFeedback(beatBest ? "best" : "complete");
+        }
+      }
+
+      function updateExercise(now) {
+        const exercise = exercises[state.activeIndex];
+        if (state.mode !== "running" || exercise.complete) return;
+
+        const distanceFromCenter = Math.hypot(state.x, state.y);
+        const alongTarget = state.x * exercise.dx + state.y * exercise.dy;
+        const perpendicular = Math.abs(state.x * exercise.dy - state.y * exercise.dx);
+        const allowedTolerance = tolerance();
+        const targetThreshold = 1 - allowedTolerance;
+        const outsideCorridor = alongTarget <= 0 || perpendicular > allowedTolerance;
+
+        if (state.phase === "outbound") {
+          if (!state.attemptActive && distanceFromCenter > DEADZONE) {
+            state.attemptActive = true;
+          }
+
+          if (state.attemptActive) {
+            if (!state.attemptInvalid && outsideCorridor) {
+              state.attemptInvalid = true;
+              exercise.repetitions = 0;
+              giveFeedback("error");
+            }
+
+            if (alongTarget >= targetThreshold) {
+              state.targetValid = !state.attemptInvalid && perpendicular <= allowedTolerance;
+              state.phase = "release";
+              if (state.targetValid) giveFeedback("hit");
+            } else if (distanceFromCenter <= DEADZONE) {
+              state.attemptActive = false;
+              state.attemptInvalid = false;
+            }
+          }
+        } else {
+          if (!state.attemptInvalid && distanceFromCenter > DEADZONE && outsideCorridor) {
+            state.attemptInvalid = true;
+            state.targetValid = false;
+            exercise.repetitions = 0;
+            giveFeedback("error");
+          }
+
+          if (distanceFromCenter <= DEADZONE) {
+            if (state.targetValid) finishRepetition(exercise, now);
+            resetAttempt();
+          }
+        }
+      }
+
+      function renderState(now) {
+        const active = exercises[state.activeIndex];
+        ui.timer.textContent = formatTime(currentElapsed(active, now));
+        ui.repetitions.setAttribute("aria-label", `${active.repetitions} of ${REPETITION_GOAL} repetitions`);
+        ui.tolerance.disabled = state.mode === "running";
+
+        repetitionDots.forEach((dot, index) => {
+          dot.classList.toggle("done", index < active.repetitions);
+        });
+
+        exerciseButtons.forEach((button, index) => {
+          const exercise = exercises[index];
+          button.classList.toggle("active", index === state.activeIndex);
+          button.classList.toggle("running", index === state.activeIndex && state.mode === "running");
+          button.classList.toggle("unfocused", index === state.activeIndex && state.focusArea !== "exercises");
+          button.querySelector(".exercise-meta").textContent = `${exercise.repetitions}/10 · ${formatTime(currentElapsed(exercise, now))}`;
+          button.querySelector(".exercise-times").textContent = `Best ${recordTime(exercise.bestTime)}`;
+        });
+
+        ui.toleranceSetting.classList.toggle("selected", state.focusArea === "settings");
+        ui.toleranceSetting.classList.toggle("editing", state.focusArea === "settings" && state.editingSetting);
+
+        ui.position.classList.toggle("invalid", state.attemptInvalid);
+        ui.position.classList.toggle("reached", state.phase === "release" && state.targetValid);
+      }
+
+      function readController() {
+        if (!navigator.getGamepads) return null;
+        return Array.from(navigator.getGamepads())
+          .filter(Boolean)
+          .find(gamepad => gamepad.axes.length >= 2) || null;
+      }
+
+      function processControllerButtons(controller, now) {
+        if (!controller) {
+          state.controllerIndex = null;
+          state.previousButtons = [];
+          return;
+        }
+
+        if (state.controllerIndex !== controller.index) {
+          state.controllerIndex = controller.index;
+          state.previousButtons = [];
+        }
+
+        const pressed = controller.buttons.map(button => Boolean(button.pressed));
+        const justPressed = index => pressed[index] && !state.previousButtons[index];
+
+        if (state.mode !== "running") {
+          const up = justPressed(12);
+          const down = justPressed(13);
+          const left = justPressed(14);
+          const right = justPressed(15);
+
+          if (up || down || left || right) {
+            ensureAudio();
+            if (state.editingSetting) {
+              if (left || down) adjustTolerance(-1);
+              else if (right || up) adjustTolerance(1);
+            } else if (up) moveFocus(0, -1);
+            else if (down) moveFocus(0, 1);
+            else if (left) moveFocus(-1, 0);
+            else if (right) moveFocus(1, 0);
+          }
+
+          if (justPressed(0)) {
+            if (state.focusArea === "settings") {
+              if (!state.editingSetting) state.editingSetting = true;
+            } else {
+              startTraining(now);
+            }
+          }
+        }
+
+        if (justPressed(1)) {
+          if (state.mode === "running") cancelTraining();
+          else if (state.editingSetting) state.editingSetting = false;
+        }
+        state.previousButtons = pressed;
+      }
+
+      function update(now) {
+        const controller = readController();
+        processControllerButtons(controller, now);
+        state.x = controller ? clamp(controller.axes[0]) : 0;
+        state.y = controller ? clamp(controller.axes[1]) : 0;
+
+        ui.position.style.left = `${50 + state.x * 46}%`;
+        ui.position.style.top = `${50 + state.y * 46}%`;
+
+        updateExercise(now);
+        renderState(now);
+        requestAnimationFrame(update);
+      }
+
+      loadRecords();
+      createInterface();
+      requestAnimationFrame(update);
+    })();
+  </script>
+</body>
+</html>
