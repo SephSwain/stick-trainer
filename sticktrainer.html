@@ -139,17 +139,26 @@
       z-index: 2;
       background: #37ff00;
       box-shadow: 0 0 28px rgba(55, 255, 0, 0.95);
+      display: grid;
+      place-items: center;
+      color: var(--black);
+      font: 900 clamp(0.82rem, 2vmin, 1.25rem)/1 ui-monospace, "Cascadia Mono", monospace;
     }
 
-    .range.left .allowed-zone { left: 0; top: var(--corridor-start); width: 50%; height: var(--corridor-size); }
-    .range.right .allowed-zone { right: 0; top: var(--corridor-start); width: 50%; height: var(--corridor-size); }
-    .range.up .allowed-zone { left: var(--corridor-start); top: 0; width: var(--corridor-size); height: 50%; }
-    .range.down .allowed-zone { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: 50%; }
+    .target-zone:not(.current) {
+      opacity: 0.52;
+      box-shadow: inset 0 0 18px rgba(0, 72, 28, 0.32);
+    }
 
-    .range.left .target-zone { left: 0; top: var(--corridor-start); width: var(--target-depth); height: var(--corridor-size); border-right: 3px solid var(--white); }
-    .range.right .target-zone { right: 0; top: var(--corridor-start); width: var(--target-depth); height: var(--corridor-size); border-left: 3px solid var(--white); }
-    .range.up .target-zone { left: var(--corridor-start); top: 0; width: var(--corridor-size); height: var(--target-depth); border-bottom: 3px solid var(--white); }
-    .range.down .target-zone { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: var(--target-depth); border-top: 3px solid var(--white); }
+    .allowed-zone.left { left: 0; top: var(--corridor-start); width: 50%; height: var(--corridor-size); }
+    .allowed-zone.right { right: 0; top: var(--corridor-start); width: 50%; height: var(--corridor-size); }
+    .allowed-zone.up { left: var(--corridor-start); top: 0; width: var(--corridor-size); height: 50%; }
+    .allowed-zone.down { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: 50%; }
+
+    .target-zone.left { left: 0; top: var(--corridor-start); width: var(--target-depth); height: var(--corridor-size); border-right: 3px solid var(--white); }
+    .target-zone.right { right: 0; top: var(--corridor-start); width: var(--target-depth); height: var(--corridor-size); border-left: 3px solid var(--white); }
+    .target-zone.up { left: var(--corridor-start); top: 0; width: var(--corridor-size); height: var(--target-depth); border-bottom: 3px solid var(--white); }
+    .target-zone.down { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: var(--target-depth); border-top: 3px solid var(--white); }
 
     .deadzone {
       width: 6.5%;
@@ -281,19 +290,20 @@
     .settings input:disabled { cursor: not-allowed; opacity: 0.45; }
 
     .exercise-list {
-      padding: clamp(18px, 3vh, 32px) clamp(13px, 1.5vw, 22px);
+      padding: clamp(12px, 2vh, 22px) clamp(13px, 1.5vw, 22px);
       border-left: 2px solid rgba(0, 234, 255, 0.35);
       background: rgba(7, 8, 13, 0.94);
       display: flex;
       flex-direction: column;
-      justify-content: center;
-      gap: 14px;
+      justify-content: flex-start;
+      gap: 7px;
+      overflow-y: auto;
     }
 
     .exercise {
       width: 100%;
-      min-height: 106px;
-      padding: 12px 14px;
+      min-height: 68px;
+      padding: 8px 12px;
       border: 2px solid rgba(255, 255, 255, 0.27);
       border-radius: 17px;
       background: #11131b;
@@ -331,21 +341,21 @@
     .exercise.active.unfocused .exercise-times { color: rgba(255, 255, 255, 0.62); }
 
     .exercise-name {
-      font-size: clamp(1.6rem, 3vw, 2.15rem);
+      font-size: clamp(1.22rem, 2vw, 1.62rem);
       font-weight: 850;
       line-height: 1;
       letter-spacing: -0.04em;
     }
 
     .exercise-meta {
-      margin-top: 8px;
+      margin-top: 6px;
       color: rgba(255, 255, 255, 0.65);
       font: 700 0.76rem/1 ui-monospace, "Cascadia Mono", monospace;
       font-variant-numeric: tabular-nums;
     }
 
     .exercise-times {
-      margin-top: 7px;
+      margin-top: 5px;
       color: rgba(255, 255, 255, 0.62);
       font: 650 0.66rem/1.25 ui-monospace, "Cascadia Mono", monospace;
       font-variant-numeric: tabular-nums;
@@ -358,9 +368,9 @@
     @media (max-height: 650px) {
       .active-exercise { min-height: 77px; }
       .active-exercise h1 { font-size: 2.7rem; }
-      .exercise-list { gap: 9px; }
-      .exercise { min-height: 72px; }
-      .exercise-name { font-size: 1.55rem; }
+      .exercise-list { gap: 6px; }
+      .exercise { min-height: 58px; }
+      .exercise-name { font-size: 1.18rem; }
       .exercise-times { display: none; }
       .settings { padding-block: 7px; }
       .range { width: min(58vmin, 530px, calc(100vw - 270px)); }
@@ -391,9 +401,9 @@
       </header>
 
       <div class="visual">
-        <div class="range up" id="range" aria-label="Green allowed corridor and red forbidden area">
-          <div class="allowed-zone"></div>
-          <div class="target-zone"></div>
+        <div class="range" id="range" aria-label="Green allowed corridors, numbered target zones, and red forbidden area">
+          <div id="allowedZones"></div>
+          <div id="targetZones"></div>
           <div class="deadzone"></div>
           <div class="position" id="position"></div>
         </div>
@@ -423,17 +433,28 @@
     (() => {
       "use strict";
 
-      const REPETITION_GOAL = 10;
       const DEADZONE = 0.07;
       const STORAGE_KEY = "stick-trainer-v1-times";
 
+      const directions = {
+        up: { id: "up", symbol: "↑", dx: 0, dy: -1 },
+        down: { id: "down", symbol: "↓", dx: 0, dy: 1 },
+        left: { id: "left", symbol: "←", dx: -1, dy: 0 },
+        right: { id: "right", symbol: "→", dx: 1, dy: 0 }
+      };
+
       const exercises = [
-        { id: "up", name: "10 ↑", dx: 0, dy: -1 },
-        { id: "down", name: "10 ↓", dx: 0, dy: 1 },
-        { id: "left", name: "10 ←", dx: -1, dy: 0 },
-        { id: "right", name: "10 →", dx: 1, dy: 0 }
+        { id: "up", goal: 10, targets: [directions.up] },
+        { id: "down", goal: 10, targets: [directions.down] },
+        { id: "left", goal: 10, targets: [directions.left] },
+        { id: "right", goal: 10, targets: [directions.right] },
+        { id: "up-down", goal: 5, targets: [directions.up, directions.down] },
+        { id: "down-up", goal: 5, targets: [directions.down, directions.up] },
+        { id: "left-right", goal: 5, targets: [directions.left, directions.right] },
+        { id: "right-left", goal: 5, targets: [directions.right, directions.left] }
       ].map(exercise => ({
         ...exercise,
+        name: `${exercise.goal} ${exercise.targets.map(target => target.symbol).join("")}`,
         repetitions: 0,
         elapsed: 0,
         startedAt: 0,
@@ -441,11 +462,14 @@
         complete: false,
         bestTime: null
       }));
+      const MAX_REPETITION_GOAL = Math.max(...exercises.map(exercise => exercise.goal));
 
       const ui = {
         activeName: document.getElementById("activeName"),
         timer: document.getElementById("timer"),
         range: document.getElementById("range"),
+        allowedZones: document.getElementById("allowedZones"),
+        targetZones: document.getElementById("targetZones"),
         position: document.getElementById("position"),
         repetitions: document.getElementById("repetitions"),
         exerciseList: document.getElementById("exerciseList"),
@@ -461,17 +485,20 @@
         settingIndex: 0,
         editingSetting: false,
         phase: "outbound",
+        targetIndex: 0,
         attemptActive: false,
         attemptInvalid: false,
         targetValid: false,
         controllerIndex: null,
         previousButtons: [],
+        geometryKey: "",
         x: 0,
         y: 0
       };
 
       const audio = {
         context: null,
+        waypoint: null,
         hit: null,
         error: null,
         complete: null,
@@ -529,6 +556,46 @@
         return Number(ui.tolerance.value) / 100;
       }
 
+      function currentTarget(exercise) {
+        return exercise.targets[state.targetIndex] || exercise.targets[0];
+      }
+
+      function targetProgress(target) {
+        return {
+          along: state.x * target.dx + state.y * target.dy,
+          perpendicular: Math.abs(state.x * target.dy - state.y * target.dx)
+        };
+      }
+
+      function reachedTargetIndex(exercise, allowedTolerance, targetThreshold) {
+        return exercise.targets.findIndex(target => {
+          const progress = targetProgress(target);
+          return progress.along >= targetThreshold && progress.perpendicular <= allowedTolerance;
+        });
+      }
+
+      function renderTrainingGeometry(exercise) {
+        const key = `${exercise.id}:${state.targetIndex}`;
+        if (state.geometryKey === key) return;
+        state.geometryKey = key;
+
+        ui.allowedZones.replaceChildren();
+        [...new Set(exercise.targets.map(target => target.id))].forEach(direction => {
+          const zone = document.createElement("div");
+          zone.className = `allowed-zone ${direction}`;
+          ui.allowedZones.appendChild(zone);
+        });
+
+        ui.targetZones.replaceChildren();
+        exercise.targets.forEach((target, index) => {
+          const zone = document.createElement("div");
+          zone.className = `target-zone ${target.id}`;
+          zone.classList.toggle("current", index === state.targetIndex);
+          zone.textContent = String(index + 1);
+          ui.targetZones.appendChild(zone);
+        });
+      }
+
       function updateToleranceGraphic() {
         const value = tolerance();
         const corridorSize = Math.max(0.45, value * 92);
@@ -541,7 +608,7 @@
       }
 
       function createSoundBuffer(context, kind) {
-        const duration = kind === "best" ? 0.58 : kind === "complete" ? 0.42 : kind === "hit" ? 0.09 : 0.085;
+        const duration = kind === "best" ? 0.58 : kind === "complete" ? 0.42 : kind === "hit" ? 0.09 : kind === "waypoint" ? 0.065 : 0.085;
         const length = Math.ceil(context.sampleRate * duration);
         const buffer = context.createBuffer(1, length, context.sampleRate);
         const channel = buffer.getChannelData(0);
@@ -561,10 +628,10 @@
                 Math.sin(Math.PI * 4 * frequencies[noteIndex] * localTime) * 0.2
               ) * envelope * 0.3;
             }
-          } else if (kind === "hit") {
+          } else if (kind === "hit" || kind === "waypoint") {
             const attack = Math.min(1, time / 0.002);
             const envelope = attack * Math.pow(1 - progress, 2);
-            const frequency = 360 + progress * 220;
+            const frequency = kind === "waypoint" ? 620 - progress * 130 : 360 + progress * 220;
             channel[index] = (
               Math.sin(Math.PI * 2 * frequency * time) +
               Math.sin(Math.PI * 4 * frequency * time) * 0.28
@@ -588,6 +655,7 @@
           if (!AudioContextClass) return null;
           try {
             audio.context = new AudioContextClass({ latencyHint: "interactive" });
+            audio.waypoint = createSoundBuffer(audio.context, "waypoint");
             audio.hit = createSoundBuffer(audio.context, "hit");
             audio.error = createSoundBuffer(audio.context, "error");
             audio.complete = createSoundBuffer(audio.context, "complete");
@@ -621,7 +689,7 @@
       function flashRange(kind) {
         ui.range.classList.remove("flash-hit", "flash-error");
         void ui.range.offsetWidth;
-        ui.range.classList.add(kind === "hit" ? "flash-hit" : "flash-error");
+        ui.range.classList.add(kind === "error" ? "flash-error" : "flash-hit");
       }
 
       function giveFeedback(kind) {
@@ -634,7 +702,7 @@
           const button = document.createElement("button");
           button.className = "exercise";
           button.type = "button";
-          button.innerHTML = `<span class="exercise-name">${exercise.name}</span><span class="exercise-meta">0/10 · 00:00.0</span><span class="exercise-times">Best —</span>`;
+          button.innerHTML = `<span class="exercise-name">${exercise.name}</span><span class="exercise-meta">0/${exercise.goal} · 00:00.0</span><span class="exercise-times">Best —</span>`;
           button.addEventListener("click", () => {
             ensureAudio();
             state.focusArea = "exercises";
@@ -645,7 +713,7 @@
           exerciseButtons.push(button);
         });
 
-        for (let index = 0; index < REPETITION_GOAL; index += 1) {
+        for (let index = 0; index < MAX_REPETITION_GOAL; index += 1) {
           const dot = document.createElement("span");
           dot.className = "repetition";
           ui.repetitions.appendChild(dot);
@@ -670,16 +738,21 @@
         state.targetValid = false;
       }
 
+      function resetSequence() {
+        state.targetIndex = 0;
+        resetAttempt();
+      }
+
       function selectExercise(index) {
         if (state.mode === "running") return;
         const now = performance.now();
         state.activeIndex = index;
-        resetAttempt();
+        resetSequence();
 
         const exercise = exercises[index];
         state.mode = exercise.complete ? "complete" : "select";
         ui.activeName.textContent = exercise.name;
-        ui.range.className = `range ${exercise.id}`;
+        ui.range.className = "range";
         renderState(now);
       }
 
@@ -745,7 +818,7 @@
         exercise.running = true;
         exercise.complete = false;
         state.mode = "running";
-        resetAttempt();
+        resetSequence();
         ensureAudio();
       }
 
@@ -758,17 +831,18 @@
         exercise.running = false;
         exercise.complete = false;
         state.mode = "select";
-        resetAttempt();
+        resetSequence();
       }
 
       function finishRepetition(exercise, now) {
         exercise.repetitions += 1;
-        if (exercise.repetitions >= REPETITION_GOAL) {
-          exercise.repetitions = REPETITION_GOAL;
+        if (exercise.repetitions >= exercise.goal) {
+          exercise.repetitions = exercise.goal;
           exercise.elapsed = now - exercise.startedAt;
           exercise.running = false;
           exercise.complete = true;
           state.mode = "complete";
+          state.targetIndex = 0;
           const beatBest = Number.isFinite(exercise.bestTime) && exercise.elapsed < exercise.bestTime;
           if (!Number.isFinite(exercise.bestTime) || exercise.elapsed < exercise.bestTime) {
             exercise.bestTime = exercise.elapsed;
@@ -782,12 +856,13 @@
         const exercise = exercises[state.activeIndex];
         if (state.mode !== "running" || exercise.complete) return;
 
+        const target = currentTarget(exercise);
         const distanceFromCenter = Math.hypot(state.x, state.y);
-        const alongTarget = state.x * exercise.dx + state.y * exercise.dy;
-        const perpendicular = Math.abs(state.x * exercise.dy - state.y * exercise.dx);
+        const progress = targetProgress(target);
         const allowedTolerance = tolerance();
         const targetThreshold = 1 - allowedTolerance;
-        const outsideCorridor = alongTarget <= 0 || perpendicular > allowedTolerance;
+        const outsideCorridor = progress.along <= 0 || progress.perpendicular > allowedTolerance;
+        const reachedIndex = reachedTargetIndex(exercise, allowedTolerance, targetThreshold);
 
         if (state.phase === "outbound") {
           if (!state.attemptActive && distanceFromCenter > DEADZONE) {
@@ -795,16 +870,26 @@
           }
 
           if (state.attemptActive) {
-            if (!state.attemptInvalid && outsideCorridor) {
+            if (!state.attemptInvalid && reachedIndex !== -1 && reachedIndex !== state.targetIndex) {
               state.attemptInvalid = true;
               exercise.repetitions = 0;
+              state.targetIndex = 0;
+              state.targetValid = false;
+              state.phase = "release";
+              giveFeedback("error");
+            } else if (!state.attemptInvalid && outsideCorridor) {
+              state.attemptInvalid = true;
+              exercise.repetitions = 0;
+              state.targetIndex = 0;
               giveFeedback("error");
             }
 
-            if (alongTarget >= targetThreshold) {
-              state.targetValid = !state.attemptInvalid && perpendicular <= allowedTolerance;
+            if (reachedIndex === state.targetIndex) {
+              state.targetValid = !state.attemptInvalid;
               state.phase = "release";
-              if (state.targetValid) giveFeedback("hit");
+              if (state.targetValid) {
+                giveFeedback(state.targetIndex + 1 < exercise.targets.length ? "waypoint" : "hit");
+              }
             } else if (distanceFromCenter <= DEADZONE) {
               state.attemptActive = false;
               state.attemptInvalid = false;
@@ -815,11 +900,19 @@
             state.attemptInvalid = true;
             state.targetValid = false;
             exercise.repetitions = 0;
+            state.targetIndex = 0;
             giveFeedback("error");
           }
 
           if (distanceFromCenter <= DEADZONE) {
-            if (state.targetValid) finishRepetition(exercise, now);
+            if (state.targetValid) {
+              if (state.targetIndex + 1 < exercise.targets.length) {
+                state.targetIndex += 1;
+              } else {
+                finishRepetition(exercise, now);
+                state.targetIndex = 0;
+              }
+            }
             resetAttempt();
           }
         }
@@ -828,10 +921,12 @@
       function renderState(now) {
         const active = exercises[state.activeIndex];
         ui.timer.textContent = formatTime(currentElapsed(active, now));
-        ui.repetitions.setAttribute("aria-label", `${active.repetitions} of ${REPETITION_GOAL} repetitions`);
+        ui.repetitions.setAttribute("aria-label", `${active.repetitions} of ${active.goal} repetitions`);
         ui.tolerance.disabled = state.mode === "running";
+        renderTrainingGeometry(active);
 
         repetitionDots.forEach((dot, index) => {
+          dot.hidden = index >= active.goal;
           dot.classList.toggle("done", index < active.repetitions);
         });
 
@@ -840,7 +935,7 @@
           button.classList.toggle("active", index === state.activeIndex);
           button.classList.toggle("running", index === state.activeIndex && state.mode === "running");
           button.classList.toggle("unfocused", index === state.activeIndex && state.focusArea !== "exercises");
-          button.querySelector(".exercise-meta").textContent = `${exercise.repetitions}/10 · ${formatTime(currentElapsed(exercise, now))}`;
+          button.querySelector(".exercise-meta").textContent = `${exercise.repetitions}/${exercise.goal} · ${formatTime(currentElapsed(exercise, now))}`;
           button.querySelector(".exercise-times").textContent = `Best ${recordTime(exercise.bestTime)}`;
         });
 
