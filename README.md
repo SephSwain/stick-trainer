@@ -1,8 +1,8 @@
-# Stick Trainer
+# Le Stick - Controller Stick Training App
 
 Browser-based stick training app.
 
-Open [sticktrainer.html](https://html-preview.github.io/?url=https://github.com/SephSwain/stick-trainer/blob/main/sticktrainer.html) to play.
+Open [le-stick.html](https://html-preview.github.io/?url=https://github.com/SephSwain/le-stick/blob/main/sticktrainer.html) to play.
 
 
 ## Code Quality
