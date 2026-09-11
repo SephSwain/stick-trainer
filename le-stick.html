@@ -42,7 +42,7 @@
       width: 100%;
       height: 100vh;
       display: grid;
-      grid-template-columns: minmax(0, 1fr) clamp(170px, 18vw, 230px);
+      grid-template-columns: clamp(160px, 18vw, 230px) minmax(0, 1fr) clamp(140px, 16vw, 210px);
     }
 
     .training {
@@ -50,6 +50,7 @@
       min-height: 0;
       padding: clamp(18px, 3vh, 34px) clamp(18px, 3vw, 42px);
       display: grid;
+      grid-template-columns: minmax(0, 1fr);
       grid-template-rows: auto minmax(0, 1fr) auto auto;
     }
 
@@ -67,13 +68,34 @@
       text-shadow: 0 0 28px rgba(0, 234, 255, 0.42);
     }
 
-    .timer {
+    .exercise-timing {
       margin-top: 7px;
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      flex-wrap: wrap;
+      gap: 8px 16px;
+    }
+
+    .timer {
       color: var(--cyan);
       font: 800 clamp(1.05rem, 2.3vh, 1.45rem)/1 ui-monospace, "Cascadia Mono", monospace;
       letter-spacing: 0.04em;
       font-variant-numeric: tabular-nums;
     }
+
+    .best-time,
+    .total-time,
+    .error-count {
+      color: rgba(255, 255, 255, 0.72);
+      font: 650 clamp(0.75rem, 1.7vh, 1rem)/1.25 ui-monospace, "Cascadia Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .total-time { color: var(--yellow); }
+
+    .error-count { color: #ff3030; }
 
     .visual {
       min-height: 0;
@@ -84,10 +106,9 @@
     .range {
       --corridor-start: 44.48%;
       --corridor-size: 11.04%;
-      --target-depth: 9.52%;
-      width: min(64vmin, 650px, calc(100vw - 290px));
+      --target-depth: 4.92%;
+      width: min(64vmin, 650px, 100%);
       aspect-ratio: 1;
-      overflow: hidden;
       position: relative;
       border: 5px solid var(--cyan);
       border-radius: 50%;
@@ -98,6 +119,38 @@
         0 0 75px rgba(0, 234, 255, 0.24);
       isolation: isolate;
     }
+
+    .range-content {
+      position: absolute;
+      inset: 0;
+      overflow: hidden;
+      border-radius: 50%;
+    }
+
+    .error-marker {
+      position: absolute;
+      z-index: 5;
+      width: clamp(32px, 6vmin, 50px);
+      aspect-ratio: 1;
+      transform: translate(-50%, -50%);
+      pointer-events: none;
+      filter: drop-shadow(0 0 2px #000) drop-shadow(0 0 6px rgba(255, 48, 48, 0.7));
+    }
+
+    .error-marker::before,
+    .error-marker::after {
+      content: "";
+      position: absolute;
+      left: 0;
+      top: 50%;
+      width: 100%;
+      height: 8px;
+      border-radius: 4px;
+      background: #ff3030;
+      transform: translateY(-50%) rotate(45deg);
+    }
+
+    .error-marker::after { transform: translateY(-50%) rotate(-45deg); }
 
     .range::after {
       content: "";
@@ -161,7 +214,7 @@
     .target-zone.down { left: var(--corridor-start); bottom: 0; width: var(--corridor-size); height: var(--target-depth); border-top: 3px solid var(--white); }
 
     .deadzone {
-      width: 6.5%;
+      width: 9.2%;
       aspect-ratio: 1;
       position: absolute;
       z-index: 3;
@@ -171,6 +224,17 @@
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.2);
       transform: translate(-50%, -50%);
+    }
+
+    .stick-trail {
+      opacity: 0.75;
+      filter: drop-shadow(0 2px 3px rgba(0, 0, 0, 0.65));
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      z-index: 3;
+      pointer-events: none;
     }
 
     .position {
@@ -289,9 +353,9 @@
 
     .settings input:disabled { cursor: not-allowed; opacity: 0.45; }
 
-    .exercise-list {
+    .exercise-list,
+    .series-panel {
       padding: clamp(12px, 2vh, 22px) clamp(13px, 1.5vw, 22px);
-      border-left: 2px solid rgba(0, 234, 255, 0.35);
       background: rgba(7, 8, 13, 0.94);
       display: flex;
       flex-direction: column;
@@ -300,23 +364,63 @@
       overflow-y: auto;
     }
 
+    .exercise-list { border-left: 2px solid rgba(0, 234, 255, 0.35); }
+
+    .series-panel {
+      border-right: 2px solid rgba(0, 234, 255, 0.35);
+      gap: 14px;
+    }
+
+    .series-panel .total-time {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      padding: 2px 6px;
+    }
+
+    #totalTime {
+      font-size: clamp(0.95rem, 1.7vw, 1.25rem);
+      font-weight: 800;
+    }
+
+    .series-list {
+      display: flex;
+      flex-direction: column;
+      gap: 7px;
+    }
+
     .exercise {
       width: 100%;
-      min-height: 68px;
+      min-height: 44px;
       padding: 8px 12px;
       border: 2px solid rgba(255, 255, 255, 0.27);
-      border-radius: 17px;
+      border-radius: 12px;
       background: #11131b;
       color: var(--white);
       cursor: pointer;
       display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      justify-content: center;
+      flex-shrink: 0;
+      align-items: center;
       transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
     }
 
     .exercise:hover { border-color: var(--cyan); transform: translateX(-3px); }
+
+    #exerciseList .exercise {
+      flex-wrap: wrap;
+      gap: 4px 8px;
+    }
+
+    .exercise-best-errors {
+      margin-left: auto;
+      text-align: right;
+      color: #ff8585;
+      font: 750 clamp(0.8rem, 1.4vw, 1.05rem)/1.2 ui-monospace, "Cascadia Mono", monospace;
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+
+    .exercise.active:not(.unfocused) .exercise-best-errors { color: #cf1935; }
 
     .exercise.active {
       border-color: var(--cyan);
@@ -337,9 +441,6 @@
       box-shadow: none;
     }
 
-    .exercise.active.unfocused .exercise-meta,
-    .exercise.active.unfocused .exercise-times { color: rgba(255, 255, 255, 0.62); }
-
     .exercise-name {
       font-size: clamp(1.22rem, 2vw, 1.62rem);
       font-weight: 850;
@@ -347,65 +448,174 @@
       letter-spacing: -0.04em;
     }
 
-    .exercise-meta {
-      margin-top: 6px;
-      color: rgba(255, 255, 255, 0.65);
-      font: 700 0.76rem/1 ui-monospace, "Cascadia Mono", monospace;
-      font-variant-numeric: tabular-nums;
+    .series {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
     }
 
-    .exercise-times {
-      margin-top: 5px;
-      color: rgba(255, 255, 255, 0.62);
-      font: 650 0.66rem/1.25 ui-monospace, "Cascadia Mono", monospace;
-      font-variant-numeric: tabular-nums;
+    .series-name {
+      font-size: clamp(0.82rem, 1.4vw, 1.02rem);
+      font-weight: 800;
+      line-height: 1.15;
       text-align: left;
     }
 
-    .exercise.active .exercise-meta,
-    .exercise.active .exercise-times { color: rgba(0, 0, 0, 0.72); }
+    .series-best {
+      font: 650 0.65rem/1.2 ui-monospace, "Cascadia Mono", monospace;
+      font-variant-numeric: tabular-nums;
+    }
+
+    .exercise.series-random {
+      position: relative;
+      padding: 4px;
+      aspect-ratio: 176 / 152;
+      overflow: hidden;
+      justify-content: center;
+      align-items: center;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, #00000040 3px 4px),
+        radial-gradient(ellipse at 50% 58%, #28005a, #090020 72%);
+    }
+
+    .exercise.series-skill-check {
+      padding: 4px;
+      aspect-ratio: 176 / 152;
+      overflow: hidden;
+      align-items: center;
+      gap: 0;
+      background:
+        repeating-linear-gradient(0deg, transparent 0 3px, #00000040 3px 4px),
+        radial-gradient(ellipse at 50% 40%, #002f42, #090020 72%);
+    }
+
+    .skill-art { display: block; width: 100%; min-height: 0; flex: 1; pointer-events: none; }
+    .series-skill-check .series-best { color: #ffff00; padding: 2px 0 4px; white-space: nowrap; }
+    .skill-gauge { filter: drop-shadow(0 0 3px #00ffff80); }
+    .skill-needle { transform-origin: 80px 66px; animation: skill-measure 4.8s ease-in-out infinite; filter: drop-shadow(0 0 4px #ff00ff); }
+    .skill-readout { transform-box: fill-box; transform-origin: bottom; animation: skill-readout 2.4s ease-in-out infinite; animation-delay: calc(var(--bar) * -.37s); }
+
+    @keyframes skill-measure {
+      0%, 100% { rotate: -48deg; }
+      28% { rotate: 32deg; }
+      43% { rotate: 14deg; }
+      66% { rotate: 58deg; }
+      82% { rotate: -8deg; }
+    }
+    @keyframes skill-readout { 0%, 100% { scale: 1 .45; } 35% { scale: 1 1; } 65% { scale: 1 .7; } }
+
+    .series-random::before,
+    .series-random::after {
+      content: "";
+      position: absolute;
+      width: 12px;
+      height: 12px;
+      pointer-events: none;
+    }
+
+    .series-random::before { top: 6px; left: 6px; border-top: 3px solid #00ffff; border-left: 3px solid #ff00ff; }
+    .series-random::after { bottom: 6px; right: 6px; border-bottom: 3px solid #ffff00; border-right: 3px solid #00ff00; }
+    .chaos-art { display: block; width: 100%; height: auto; overflow: visible; pointer-events: none; }
+    .chaos-symbol { font: 114px Arial, sans-serif; letter-spacing: -7px; text-anchor: middle; }
+    .chaos-loop { transform-origin: 73px 64px; animation: chaos-liquid 5.4s ease-in-out infinite; }
+    .chaos-loop-main { fill: #00ffff; filter: drop-shadow(0 0 4px #00ffff) drop-shadow(0 0 11px #0000ff); animation: chaos-liquid 5.4s ease-in-out infinite, chaos-palette 12s steps(1, end) infinite; }
+    .chaos-loop-echo { fill: #ff00ff; opacity: .85; filter: drop-shadow(0 0 6px #ff00ff); animation: chaos-echo 3.87s ease-in-out infinite; }
+    .chaos-pixel { filter: drop-shadow(0 0 4px currentColor); }
+    .chaos-pixel-cyan { color: #00ffff; fill: #ffff00; }
+    .chaos-pixel-pink { color: #ff00ff; fill: #00ff00; }
+    .chaos-fragments { animation: chaos-fragments 4.5s step-end infinite; }
+
+    @keyframes chaos-liquid {
+      0%, 100% { transform: rotate(-12deg) scale(1, .94) skewX(-4deg); }
+      30% { transform: rotate(-5deg) scale(.87, 1.17) skewX(9deg); }
+      65% { transform: rotate(-16deg) scale(1.08, .86) skewX(-9deg); }
+    }
+
+    @keyframes chaos-echo {
+      0%, 100% { transform: translate(4px, 5px) rotate(8deg) scale(.94, 1.1); }
+      40% { transform: translate(-6px, -2px) rotate(-10deg) scale(1.1, .85); }
+      75% { transform: translate(5px, -4px) rotate(16deg) scale(.9, 1.13); }
+    }
+
+    @keyframes chaos-palette {
+      0%, 100% { fill: #00ffff; }
+      25% { fill: #00ff00; }
+      50% { fill: #ffff00; }
+      75% { fill: #ff00ff; }
+    }
+
+    @keyframes chaos-fragments {
+      0%, 100% { translate: 0 0; }
+      35% { translate: 3px -2px; }
+      70% { translate: -2px 3px; }
+    }
 
     @media (max-height: 650px) {
       .active-exercise { min-height: 77px; }
       .active-exercise h1 { font-size: 2.7rem; }
-      .exercise-list { gap: 6px; }
-      .exercise { min-height: 58px; }
+      .exercise-list,
+      .series-list { gap: 6px; }
       .exercise-name { font-size: 1.18rem; }
-      .exercise-times { display: none; }
       .settings { padding-block: 7px; }
-      .range { width: min(58vmin, 530px, calc(100vw - 270px)); }
+      .range { width: min(58vmin, 530px, 100%); }
     }
 
     @media (max-width: 620px) {
-      .app { grid-template-columns: minmax(0, 1fr) 138px; }
-      .training { padding-inline: 10px; }
-      .exercise-list { padding-inline: 9px; }
-      .exercise { min-height: 78px; padding: 10px; border-radius: 13px; }
-      .exercise-name { font-size: 1.45rem; }
-      .exercise-meta { font-size: 0.64rem; }
+      .app { grid-template-columns: clamp(84px, 22vw, 126px) minmax(0, 1fr) clamp(82px, 22vw, 126px); }
+      .training { padding-inline: 6px; }
+      .exercise-list,
+      .series-panel { padding-inline: 6px; }
+      .exercise { padding: 8px 6px; }
+      .exercise-name { font-size: clamp(1rem, 3vw, 1.3rem); }
+      .series-name { font-size: clamp(0.72rem, 2.2vw, 0.9rem); }
+      .series-best { font-size: 0.58rem; }
+      .range-scale { font-size: clamp(0.45rem, 1.5vw, 0.62rem); }
+      .series-panel .total-time { padding-inline: 0; }
+      #totalTime { font-size: 0.85rem; }
+      .exercise-timing { column-gap: 8px; }
+      .timer { font-size: clamp(0.85rem, 3.2vw, 1.05rem); }
+      .best-time,
+      .total-time,
+      .error-count { font-size: clamp(0.62rem, 2.5vw, 0.8rem); }
       .settings { grid-template-columns: 1fr; gap: 8px; padding-inline: 10px; }
-      .range { width: min(62vmin, calc(100vw - 160px)); }
+      .range { width: min(62vmin, 100%); }
     }
 
     @media (prefers-reduced-motion: reduce) {
       .exercise { transition: none; }
+      .chaos-loop, .chaos-fragments { animation: none; }
+      .chaos-pixel { display: none; }
+      .skill-needle, .skill-readout { animation: none; }
     }
   </style>
 </head>
 <body>
   <main class="app">
+    <aside class="series-panel" aria-label="Series">
+      <div class="total-time">Total <span id="totalTime">00:00.0</span></div>
+      <nav class="series-list" id="seriesList" aria-label="Series modes"></nav>
+    </aside>
+
     <section class="training" aria-label="Active stick exercise">
       <header class="active-exercise">
         <h1 id="activeName">10 ↑</h1>
-        <div class="timer" id="timer">00:00.0</div>
+        <div class="exercise-timing">
+          <div class="timer" id="timer" aria-label="Elapsed time">00:00.0</div>
+          <div class="best-time">Best <span id="bestTime">—</span></div>
+          <div class="error-count" title="Errors in this run">X: <span id="errorCount">0</span></div>
+        </div>
       </header>
 
       <div class="visual">
         <div class="range" id="range" aria-label="Green allowed corridors, numbered target zones, and red forbidden area">
-          <div id="allowedZones"></div>
-          <div id="targetZones"></div>
-          <div class="deadzone"></div>
-          <div class="position" id="position"></div>
+          <div class="range-content">
+            <div id="allowedZones"></div>
+            <div id="targetZones"></div>
+            <div class="deadzone"></div>
+            <canvas class="stick-trail" id="stickTrail" width="1000" height="1000" aria-hidden="true"></canvas>
+            <div class="position" id="position"></div>
+          </div>
+          <div class="error-marker" id="errorMarker" role="img" aria-label="Error position" hidden></div>
         </div>
       </div>
 
@@ -433,7 +643,8 @@
     (() => {
       "use strict";
 
-      const DEADZONE = 0.07;
+      const DEADZONE = 0.10;
+      const TARGET_ZONE = 0.02;
       const STORAGE_KEY = "stick-trainer-v1-times";
 
       const directions = {
@@ -451,28 +662,46 @@
         { id: "up-down", goal: 5, targets: [directions.up, directions.down] },
         { id: "down-up", goal: 5, targets: [directions.down, directions.up] },
         { id: "left-right", goal: 5, targets: [directions.left, directions.right] },
-        { id: "right-left", goal: 5, targets: [directions.right, directions.left] }
+        { id: "right-left", goal: 5, targets: [directions.right, directions.left] },
+        { id: "random-direction", goal: 10, randomTarget: true, targets: [directions.up] }
       ].map(exercise => ({
         ...exercise,
-        name: `${exercise.goal} ${exercise.targets.map(target => target.symbol).join("")}`,
+        name: `${exercise.goal} ${exercise.randomTarget ? "?" : exercise.targets.map(target => target.symbol).join("")}`,
         repetitions: 0,
+        errors: 0,
         elapsed: 0,
         startedAt: 0,
         running: false,
         complete: false,
-        bestTime: null
+        bestTime: null,
+        bestErrors: null
       }));
       const MAX_REPETITION_GOAL = Math.max(...exercises.map(exercise => exercise.goal));
+      const SKILL_CHECK_IDS = Object.freeze([
+        "up", "down", "left", "right", "up-down", "down-up", "left-right", "right-left"
+      ]);
+      const skillCheckIndices = SKILL_CHECK_IDS.map(id => exercises.findIndex(exercise => exercise.id === id));
+
+      const series = [
+        { id: "series-random", name: "endless random", bestTime: null },
+        { id: "series-all", name: "Skill Check", bestTime: null }
+      ];
 
       const ui = {
         activeName: document.getElementById("activeName"),
         timer: document.getElementById("timer"),
+        bestTime: document.getElementById("bestTime"),
+        errorCount: document.getElementById("errorCount"),
+        totalTime: document.getElementById("totalTime"),
         range: document.getElementById("range"),
         allowedZones: document.getElementById("allowedZones"),
         targetZones: document.getElementById("targetZones"),
         position: document.getElementById("position"),
+        errorMarker: document.getElementById("errorMarker"),
+        stickTrail: document.getElementById("stickTrail"),
         repetitions: document.getElementById("repetitions"),
         exerciseList: document.getElementById("exerciseList"),
+        seriesList: document.getElementById("seriesList"),
         tolerance: document.getElementById("tolerance"),
         toleranceValue: document.getElementById("toleranceValue"),
         toleranceSetting: document.getElementById("toleranceSetting")
@@ -480,6 +709,10 @@
 
       const state = {
         activeIndex: 0,
+        seriesIndex: null,
+        seriesStartedAt: 0,
+        seriesElapsed: 0,
+        seriesCompleted: 0,
         mode: "select",
         focusArea: "exercises",
         settingIndex: 0,
@@ -506,7 +739,40 @@
       };
 
       const exerciseButtons = [];
+      const seriesButtons = [];
       const repetitionDots = [];
+      const trailContext = ui.stickTrail.getContext("2d");
+      let previousTrailPoint = null;
+      let trailPausedUntilCenter = false;
+
+      function clearTrail() {
+        trailContext.clearRect(0, 0, ui.stickTrail.width, ui.stickTrail.height);
+        previousTrailPoint = null;
+      }
+
+      function updateTrail(controller) {
+        if (state.mode !== "running" || !controller || trailPausedUntilCenter) {
+          previousTrailPoint = null;
+          return;
+        }
+        const point = {
+          x: (0.5 + state.x * 0.46) * ui.stickTrail.width,
+          y: (0.5 + state.y * 0.46) * ui.stickTrail.height,
+          controllerIndex: controller.index
+        };
+        if (previousTrailPoint && previousTrailPoint.controllerIndex === point.controllerIndex &&
+            (previousTrailPoint.x !== point.x || previousTrailPoint.y !== point.y)) {
+          trailContext.beginPath();
+          trailContext.moveTo(previousTrailPoint.x, previousTrailPoint.y);
+          trailContext.lineTo(point.x, point.y);
+          trailContext.lineCap = "round";
+          trailContext.lineJoin = "round";
+          trailContext.strokeStyle = "#ff8a80";
+          trailContext.lineWidth = 10;
+          trailContext.stroke();
+        }
+        previousTrailPoint = point;
+      }
 
       function clamp(value) {
         return Math.max(-1, Math.min(1, Number(value) || 0));
@@ -523,17 +789,44 @@
         return exercise.running ? now - exercise.startedAt : exercise.elapsed;
       }
 
+      function currentTotal(now) {
+        const exercise = exercises[state.activeIndex];
+        if (state.seriesIndex === null) return currentElapsed(exercise, now);
+        return state.mode === "running" ? now - state.seriesStartedAt : state.seriesElapsed;
+      }
+
       function recordTime(value) {
         return Number.isFinite(value) && value > 0 ? formatTime(value) : "—";
+      }
+
+      function recordErrors(value) {
+        return Number.isSafeInteger(value) && value >= 0 ? String(value) : "—";
+      }
+
+      function exerciseOrder() {
+        return exercises.map((_, index) => index).sort((left, right) => {
+          const leftErrors = exercises[left].bestErrors ?? Infinity;
+          const rightErrors = exercises[right].bestErrors ?? Infinity;
+          return leftErrors === rightErrors ? left - right : rightErrors - leftErrors;
+        });
+      }
+
+      function sortExerciseButtons() {
+        const focused = document.activeElement;
+        ui.exerciseList.replaceChildren(...exerciseOrder().map(index => exerciseButtons[index]));
+        if (exerciseButtons.includes(focused)) focused.focus({ preventScroll: true });
       }
 
       function loadRecords() {
         try {
           const records = JSON.parse(localStorage.getItem(STORAGE_KEY) || "{}");
-          exercises.forEach(exercise => {
+          [...exercises, ...series].forEach(exercise => {
             const saved = records[exercise.id];
             if (!saved) return;
             exercise.bestTime = Number.isFinite(saved.bestTime) && saved.bestTime > 0 ? saved.bestTime : null;
+            if ("bestErrors" in exercise) {
+              exercise.bestErrors = Number.isSafeInteger(saved.bestErrors) && saved.bestErrors >= 0 ? saved.bestErrors : null;
+            }
           });
         } catch (_) {
           // Training still works when browser storage is unavailable.
@@ -542,8 +835,9 @@
 
       function saveRecords() {
         const records = {};
-        exercises.forEach(exercise => {
+        [...exercises, ...series].forEach(exercise => {
           records[exercise.id] = { bestTime: exercise.bestTime };
+          if ("bestErrors" in exercise) records[exercise.id].bestErrors = exercise.bestErrors;
         });
         try {
           localStorage.setItem(STORAGE_KEY, JSON.stringify(records));
@@ -558,6 +852,12 @@
 
       function currentTarget(exercise) {
         return exercise.targets[state.targetIndex] || exercise.targets[0];
+      }
+
+      function chooseRandomTarget(exercise) {
+        if (!exercise.randomTarget) return;
+        const choices = Object.values(directions);
+        exercise.targets = [choices[Math.floor(Math.random() * choices.length)]];
       }
 
       function targetProgress(target) {
@@ -575,7 +875,7 @@
       }
 
       function renderTrainingGeometry(exercise) {
-        const key = `${exercise.id}:${state.targetIndex}`;
+        const key = `${exercise.id}:${state.targetIndex}:${exercise.targets.map(target => target.id).join(",")}`;
         if (state.geometryKey === key) return;
         state.geometryKey = key;
 
@@ -600,7 +900,7 @@
         const value = tolerance();
         const corridorSize = Math.max(0.45, value * 92);
         const corridorStart = 50 - corridorSize / 2;
-        const targetDepth = 4 + value * 46;
+        const targetDepth = 4 + TARGET_ZONE * 46;
         ui.toleranceValue.textContent = `${ui.tolerance.value} %`;
         ui.range.style.setProperty("--corridor-start", `${corridorStart}%`);
         ui.range.style.setProperty("--corridor-size", `${corridorSize}%`);
@@ -608,16 +908,32 @@
       }
 
       function createSoundBuffer(context, kind) {
-        const duration = kind === "best" ? 0.58 : kind === "complete" ? 0.42 : kind === "hit" ? 0.09 : kind === "waypoint" ? 0.065 : 0.085;
+        const duration = kind === "best" ? 0.58 : kind === "complete" ? 0.64 : kind === "hit" ? 0.09 : kind === "waypoint" ? 0.065 : 0.14;
         const length = Math.ceil(context.sampleRate * duration);
         const buffer = context.createBuffer(1, length, context.sampleRate);
         const channel = buffer.getChannelData(0);
+        let noiseState = 0x6d2b79f5;
 
         for (let index = 0; index < length; index += 1) {
           const time = index / context.sampleRate;
           const progress = index / length;
-          if (kind === "complete" || kind === "best") {
-            const frequencies = kind === "best" ? [247, 330, 415, 494] : [220, 277, 330];
+          if (kind === "complete") {
+            // Three short notes resolve into a sustained chord, unlike a repetition's chirp.
+            const lead = [392, 523.25, 659.25];
+            const noteIndex = Math.floor(time / 0.085);
+            if (noteIndex < lead.length) {
+              const localTime = time - noteIndex * 0.085;
+              const envelope = Math.min(1, localTime / 0.003) * Math.pow(1 - localTime / 0.085, 1.3);
+              channel[index] = Math.sin(2 * Math.PI * lead[noteIndex] * localTime) * envelope * 0.25;
+            } else {
+              const localTime = time - 0.255;
+              const envelope = Math.min(1, localTime / 0.006) * Math.pow(Math.max(0, 1 - localTime / 0.385), 1.4);
+              channel[index] = (Math.sin(2 * Math.PI * 523.25 * localTime) +
+                Math.sin(2 * Math.PI * 659.25 * localTime) +
+                Math.sin(2 * Math.PI * 783.99 * localTime)) * envelope * 0.09;
+            }
+          } else if (kind === "best") {
+            const frequencies = [247, 330, 415, 494];
             const noteIndex = Math.floor(time / 0.14);
             const localTime = time - noteIndex * 0.14;
             const localProgress = localTime / 0.12;
@@ -631,18 +947,26 @@
           } else if (kind === "hit" || kind === "waypoint") {
             const attack = Math.min(1, time / 0.002);
             const envelope = attack * Math.pow(1 - progress, 2);
-            const frequency = kind === "waypoint" ? 620 - progress * 130 : 360 + progress * 220;
+            const frequency = kind === "waypoint" ? 620 - progress * 130 : 324 + progress * 198;
             channel[index] = (
               Math.sin(Math.PI * 2 * frequency * time) +
               Math.sin(Math.PI * 4 * frequency * time) * 0.28
             ) * envelope * 0.3;
           } else {
-            const attack = Math.min(1, time / 0.002);
-            const envelope = attack * Math.pow(1 - progress, 2);
-            channel[index] = (
-              Math.sin(Math.PI * 2 * 92 * time) +
-              Math.sign(Math.sin(Math.PI * 2 * 58 * time)) * 0.32
-            ) * envelope * 0.25;
+            // Local noise keeps sound generation independent of random exercise selection.
+            noiseState ^= noiseState << 13;
+            noiseState ^= noiseState >>> 17;
+            noiseState ^= noiseState << 5;
+            const noise = (noiseState >>> 0) / 2147483648 - 1;
+            const phase = 90 * time - 27.5 * time * time / duration;
+            const saw = 2 * (phase - Math.floor(phase)) - 1;
+            const detunedPhase = phase * 1.43;
+            const detunedSaw = 2 * (detunedPhase - Math.floor(detunedPhase)) - 1;
+            const distortion = Math.tanh(2.8 * (saw * 0.6 + detunedSaw * 0.3 + noise * 0.35));
+            const impact = noise * Math.exp(-time / 0.008);
+            const attack = Math.min(1, time / 0.001);
+            const envelope = attack * Math.pow(1 - progress, 1.5);
+            channel[index] = (distortion * 0.8 + impact * 0.2) * envelope * 0.32;
           }
         }
 
@@ -669,7 +993,7 @@
         return audio.context;
       }
 
-      function playFeedback(kind) {
+      function playFeedback(kind, playbackRate = 1) {
         const context = ensureAudio();
         const buffer = audio[kind];
         if (!context || !buffer) return;
@@ -678,6 +1002,7 @@
           if (context.state !== "running") return;
           const source = context.createBufferSource();
           source.buffer = buffer;
+          source.playbackRate.value = playbackRate;
           source.connect(context.destination);
           source.start(context.currentTime);
         };
@@ -692,8 +1017,16 @@
         ui.range.classList.add(kind === "error" ? "flash-error" : "flash-hit");
       }
 
-      function giveFeedback(kind) {
-        playFeedback(kind);
+      function giveFeedback(kind, withSound = true) {
+        ui.errorMarker.hidden = kind !== "error";
+        if (kind === "error") {
+          exercises[state.activeIndex].errors += 1;
+          clearTrail();
+          trailPausedUntilCenter = true;
+          ui.errorMarker.style.left = `${50 + state.x * 46}%`;
+          ui.errorMarker.style.top = `${50 + state.y * 46}%`;
+        }
+        if (withSound) playFeedback(kind);
         flashRange(kind);
       }
 
@@ -702,15 +1035,76 @@
           const button = document.createElement("button");
           button.className = "exercise";
           button.type = "button";
-          button.innerHTML = `<span class="exercise-name">${exercise.name}</span><span class="exercise-meta">0/${exercise.goal} · 00:00.0</span><span class="exercise-times">Best —</span>`;
+          button.dataset.exercise = exercise.id;
+          button.innerHTML = `<span class="exercise-name">${exercise.name}</span><span class="exercise-best-errors" title="Fewest errors in a completed run">— X</span>`;
           button.addEventListener("click", () => {
             ensureAudio();
-            state.focusArea = "exercises";
-            state.editingSetting = false;
             selectExercise(index);
           });
           ui.exerciseList.appendChild(button);
           exerciseButtons.push(button);
+        });
+
+        series.forEach((item, index) => {
+          const button = document.createElement("button");
+          button.className = "exercise series";
+          button.type = "button";
+          button.dataset.series = item.id;
+          button.innerHTML = `<span class="series-name">${item.name}</span>`;
+          if (item.id === "series-random") {
+            button.classList.add("series-random");
+            button.setAttribute("aria-label", "endless random");
+            button.title = "endless random";
+            button.innerHTML = `
+              <svg class="chaos-art" viewBox="-10 -12 166 152" aria-hidden="true" focusable="false">
+                <g class="chaos-loop chaos-loop-echo"><text class="chaos-symbol" x="73" y="97">∞</text></g>
+                <g class="chaos-loop chaos-loop-main"><text class="chaos-symbol" x="73" y="97">∞</text></g>
+                <g class="chaos-fragments">
+                  <path fill="#ff0000" d="M18 23h6v6h-6z M116 99h4v4h-4z"/>
+                  <path fill="#ffff00" d="M113 22h5v5h-5z M24 101h5v5h-5z"/>
+                  <path fill="#00ff00" d="M12 80h4v4h-4z M127 43h4v4h-4z"/>
+                </g>
+                <rect class="chaos-pixel chaos-pixel-cyan" x="-2.5" y="-2.5" width="5" height="5">
+                  <animateMotion dur="3.15s" repeatCount="indefinite" path="M73 64 C49 32 22 34 22 60 C22 87 49 93 73 64 C97 35 124 34 124 60 C124 88 98 96 73 64"/>
+                </rect>
+                <rect class="chaos-pixel chaos-pixel-pink" x="-2.5" y="-2.5" width="5" height="5">
+                  <animateMotion dur="4.23s" repeatCount="indefinite" calcMode="linear" keyPoints="1;0" keyTimes="0;1" path="M73 64 C49 32 22 34 22 60 C22 87 49 93 73 64 C97 35 124 34 124 60 C124 88 98 96 73 64"/>
+                </rect>
+              </svg>`;
+          }
+          if (item.id === "series-all") {
+            button.classList.add("series-skill-check");
+            button.setAttribute("aria-label", "Skill Check");
+            button.title = "Skill Check · Benchmark";
+            button.innerHTML = `
+              <svg class="skill-art" viewBox="0 0 160 126" aria-hidden="true" focusable="false">
+                <g class="skill-gauge" fill="none" stroke-width="8">
+                  <path d="M37 66A43 43 0 0 1 47 38" stroke="#ff00ff"/>
+                  <path d="M51 34A43 43 0 0 1 77 23" stroke="#ffff00"/>
+                  <path d="M83 23A43 43 0 0 1 109 34" stroke="#00ff00"/>
+                  <path d="M113 38A43 43 0 0 1 123 66" stroke="#00ffff"/>
+                </g>
+                <path d="M48 66h7 M58 44l5 5 M80 34v7 M102 44l-5 5 M112 66h-7" stroke="#00ffff" stroke-width="2"/>
+                <path class="skill-needle" d="M77 66L80 35L83 66Z" fill="#ffffff"/>
+                <path d="M76 62h8v8h-8z" fill="#ff00ff"/>
+                <path class="skill-readout" style="--bar:0" d="M53 84h7v12h-7z" fill="#ff00ff"/>
+                <path class="skill-readout" style="--bar:1" d="M65 78h7v18h-7z" fill="#ffff00"/>
+                <path class="skill-readout" style="--bar:2" d="M77 74h7v22h-7z" fill="#00ff00"/>
+                <path class="skill-readout" style="--bar:3" d="M89 78h7v18h-7z" fill="#00ffff"/>
+                <path class="skill-readout" style="--bar:4" d="M101 84h7v12h-7z" fill="#ff00ff"/>
+                <path d="M17 18h10v3h-7v7h-3z M133 81h10v-10h-3v7h-7z" fill="#ff00ff"/>
+                <text x="80" y="120" text-anchor="middle" fill="#ffff00" font-family="ui-monospace, monospace" font-size="15" font-weight="900" letter-spacing="1">SKILL CHECK</text>
+              </svg>`;
+            const best = document.createElement("span");
+            best.className = "series-best";
+            button.appendChild(best);
+          }
+          button.addEventListener("click", () => {
+            ensureAudio();
+            selectSeries(index);
+          });
+          ui.seriesList.appendChild(button);
+          seriesButtons.push(button);
         });
 
         for (let index = 0; index < MAX_REPETITION_GOAL; index += 1) {
@@ -720,9 +1114,11 @@
           repetitionDots.push(dot);
         }
 
-        selectExercise(0);
+        sortExerciseButtons();
+        selectExercise(exerciseOrder()[0]);
         ui.tolerance.addEventListener("input", updateToleranceGraphic);
         ui.toleranceSetting.addEventListener("pointerdown", () => {
+          if (state.mode === "running") return;
           state.focusArea = "settings";
           state.settingIndex = 0;
           state.editingSetting = false;
@@ -732,6 +1128,7 @@
       }
 
       function resetAttempt() {
+        trailPausedUntilCenter = false;
         state.phase = "outbound";
         state.attemptActive = false;
         state.attemptInvalid = false;
@@ -745,6 +1142,14 @@
 
       function selectExercise(index) {
         if (state.mode === "running") return;
+        ui.errorMarker.hidden = true;
+        state.focusArea = "exercises";
+        state.editingSetting = false;
+        state.seriesIndex = null;
+        state.seriesStartedAt = 0;
+        state.seriesElapsed = 0;
+        state.seriesCompleted = 0;
+        if (state.activeIndex !== index) clearTrail();
         const now = performance.now();
         state.activeIndex = index;
         resetSequence();
@@ -756,29 +1161,52 @@
         renderState(now);
       }
 
+      function selectSeries(index) {
+        if (state.mode === "running") return;
+        state.focusArea = "series";
+        state.editingSetting = false;
+        if (state.seriesIndex !== index) {
+          state.seriesIndex = index;
+          state.seriesStartedAt = 0;
+          state.seriesElapsed = 0;
+          state.seriesCompleted = 0;
+          state.mode = "select";
+          if (series[index].id === "series-all") state.activeIndex = skillCheckIndices[0];
+          resetSequence();
+          clearTrail();
+          ui.errorMarker.hidden = true;
+          ui.activeName.textContent = exercises[state.activeIndex].name;
+          ui.range.className = "range";
+        }
+        renderState(performance.now());
+      }
+
       function navigationItems() {
         return [
           ...exerciseButtons.map((element, index) => ({ type: "exercise", index, element })),
+          ...seriesButtons.map((element, index) => ({ type: "series", index, element })),
           { type: "setting", index: 0, element: ui.toleranceSetting }
         ];
       }
 
       function currentNavigationItem() {
-        return state.focusArea === "settings"
-          ? { type: "setting", index: 0, element: ui.toleranceSetting }
-          : { type: "exercise", index: state.activeIndex, element: exerciseButtons[state.activeIndex] };
+        if (state.focusArea === "settings") return { type: "setting", index: 0, element: ui.toleranceSetting };
+        if (state.focusArea === "series") return { type: "series", index: state.seriesIndex, element: seriesButtons[state.seriesIndex] };
+        return { type: "exercise", index: state.activeIndex, element: exerciseButtons[state.activeIndex] };
       }
 
       function focusNavigationItem(item) {
         state.editingSetting = false;
         if (item.type === "exercise") {
-          state.focusArea = "exercises";
           selectExercise(item.index);
+        } else if (item.type === "series") {
+          selectSeries(item.index);
         } else {
           state.focusArea = "settings";
           state.settingIndex = item.index;
           renderState(performance.now());
         }
+        item.element.scrollIntoView({ block: "nearest" });
       }
 
       function moveFocus(dx, dy) {
@@ -811,14 +1239,31 @@
       }
 
       function startTraining(now) {
+        state.seriesStartedAt = now;
+        state.seriesElapsed = 0;
+        state.seriesCompleted = 0;
+        const index = state.seriesIndex === null ? state.activeIndex
+          : series[state.seriesIndex].id === "series-all" ? skillCheckIndices[0]
+          : Math.floor(Math.random() * exercises.length);
+        startExercise(index, now);
+      }
+
+      function startExercise(index, now) {
+        clearTrail();
+        ui.errorMarker.hidden = true;
+        state.activeIndex = index;
         const exercise = exercises[state.activeIndex];
         exercise.repetitions = 0;
+        exercise.errors = 0;
         exercise.elapsed = 0;
         exercise.startedAt = now;
         exercise.running = true;
         exercise.complete = false;
         state.mode = "running";
+        chooseRandomTarget(exercise);
         resetSequence();
+        ui.activeName.textContent = exercise.name;
+        ui.range.className = "range";
         ensureAudio();
       }
 
@@ -826,16 +1271,35 @@
         if (state.mode !== "running") return;
         const exercise = exercises[state.activeIndex];
         exercise.repetitions = 0;
+        exercise.errors = 0;
         exercise.elapsed = 0;
         exercise.startedAt = 0;
         exercise.running = false;
         exercise.complete = false;
         state.mode = "select";
+        state.seriesStartedAt = 0;
+        state.seriesElapsed = 0;
+        state.seriesCompleted = 0;
+        clearTrail();
+        ui.errorMarker.hidden = true;
         resetSequence();
       }
 
+      function resetTimer(now) {
+        if (state.mode !== "running") return;
+        const exercise = exercises[state.activeIndex];
+        exercise.elapsed = 0;
+        exercise.startedAt = now;
+      }
+
       function finishRepetition(exercise, now) {
+        clearTrail();
         exercise.repetitions += 1;
+        if (exercise.repetitions < exercise.goal) {
+          const progress = (exercise.repetitions - 1) / Math.max(1, exercise.goal - 2);
+          playFeedback("hit", Math.pow(2, progress));
+          chooseRandomTarget(exercise);
+        }
         if (exercise.repetitions >= exercise.goal) {
           exercise.repetitions = exercise.goal;
           exercise.elapsed = now - exercise.startedAt;
@@ -843,12 +1307,36 @@
           exercise.complete = true;
           state.mode = "complete";
           state.targetIndex = 0;
-          const beatBest = Number.isFinite(exercise.bestTime) && exercise.elapsed < exercise.bestTime;
+          let beatBest = Number.isFinite(exercise.bestTime) && exercise.elapsed < exercise.bestTime;
           if (!Number.isFinite(exercise.bestTime) || exercise.elapsed < exercise.bestTime) {
             exercise.bestTime = exercise.elapsed;
           }
+          if (exercise.bestErrors === null || exercise.errors < exercise.bestErrors) {
+            exercise.bestErrors = exercise.errors;
+            sortExerciseButtons();
+            if (state.seriesIndex === null && state.focusArea === "exercises") {
+              exerciseButtons[state.activeIndex].scrollIntoView({ block: "nearest" });
+            }
+          }
+          let nextIndex = null;
+          if (state.seriesIndex !== null) {
+            const selectedSeries = series[state.seriesIndex];
+            state.seriesElapsed = now - state.seriesStartedAt;
+            state.seriesCompleted += 1;
+            if (selectedSeries.id === "series-random") {
+              nextIndex = Math.floor(Math.random() * exercises.length);
+            } else if (state.seriesCompleted < skillCheckIndices.length) {
+              nextIndex = skillCheckIndices[state.seriesCompleted];
+            } else {
+              if (Number.isFinite(selectedSeries.bestTime) && state.seriesElapsed < selectedSeries.bestTime) beatBest = true;
+              if (!Number.isFinite(selectedSeries.bestTime) || state.seriesElapsed < selectedSeries.bestTime) {
+                selectedSeries.bestTime = state.seriesElapsed;
+              }
+            }
+          }
           saveRecords();
           playFeedback(beatBest ? "best" : "complete");
+          if (nextIndex !== null) startExercise(nextIndex, now);
         }
       }
 
@@ -860,7 +1348,7 @@
         const distanceFromCenter = Math.hypot(state.x, state.y);
         const progress = targetProgress(target);
         const allowedTolerance = tolerance();
-        const targetThreshold = 1 - allowedTolerance;
+        const targetThreshold = 1 - TARGET_ZONE;
         const outsideCorridor = progress.along <= 0 || progress.perpendicular > allowedTolerance;
         const reachedIndex = reachedTargetIndex(exercise, allowedTolerance, targetThreshold);
 
@@ -876,11 +1364,13 @@
               state.targetIndex = 0;
               state.targetValid = false;
               state.phase = "release";
+              resetTimer(now);
               giveFeedback("error");
             } else if (!state.attemptInvalid && outsideCorridor) {
               state.attemptInvalid = true;
               exercise.repetitions = 0;
               state.targetIndex = 0;
+              resetTimer(now);
               giveFeedback("error");
             }
 
@@ -888,11 +1378,15 @@
               state.targetValid = !state.attemptInvalid;
               state.phase = "release";
               if (state.targetValid) {
-                giveFeedback(state.targetIndex + 1 < exercise.targets.length ? "waypoint" : "hit");
+                if (state.targetIndex + 1 === exercise.targets.length) {
+                  clearTrail();
+                  trailPausedUntilCenter = true;
+                }
+                const isWaypoint = state.targetIndex + 1 < exercise.targets.length;
+                giveFeedback(isWaypoint ? "waypoint" : "hit", isWaypoint);
               }
             } else if (distanceFromCenter <= DEADZONE) {
-              state.attemptActive = false;
-              state.attemptInvalid = false;
+              resetAttempt();
             }
           }
         } else {
@@ -901,6 +1395,7 @@
             state.targetValid = false;
             exercise.repetitions = 0;
             state.targetIndex = 0;
+            resetTimer(now);
             giveFeedback("error");
           }
 
@@ -920,7 +1415,13 @@
 
       function renderState(now) {
         const active = exercises[state.activeIndex];
-        ui.timer.textContent = formatTime(currentElapsed(active, now));
+        ui.activeName.textContent = active.randomTarget && state.mode === "running"
+          ? `${active.name} ${currentTarget(active).symbol}` : active.name;
+        const elapsed = state.seriesIndex !== null && state.mode === "select" ? 0 : currentElapsed(active, now);
+        ui.timer.textContent = formatTime(elapsed);
+        ui.bestTime.textContent = recordTime(active.bestTime);
+        ui.errorCount.textContent = String(state.seriesIndex !== null && state.mode === "select" ? 0 : active.errors);
+        ui.totalTime.textContent = formatTime(currentTotal(now));
         ui.repetitions.setAttribute("aria-label", `${active.repetitions} of ${active.goal} repetitions`);
         ui.tolerance.disabled = state.mode === "running";
         renderTrainingGeometry(active);
@@ -931,12 +1432,20 @@
         });
 
         exerciseButtons.forEach((button, index) => {
-          const exercise = exercises[index];
+          button.querySelector(".exercise-best-errors").textContent = `${recordErrors(exercises[index].bestErrors)} X`;
           button.classList.toggle("active", index === state.activeIndex);
           button.classList.toggle("running", index === state.activeIndex && state.mode === "running");
-          button.classList.toggle("unfocused", index === state.activeIndex && state.focusArea !== "exercises");
-          button.querySelector(".exercise-meta").textContent = `${exercise.repetitions}/${exercise.goal} · ${formatTime(currentElapsed(exercise, now))}`;
-          button.querySelector(".exercise-times").textContent = `Best ${recordTime(exercise.bestTime)}`;
+          button.classList.toggle("unfocused", index === state.activeIndex && state.focusArea !== "exercises" && state.mode !== "running");
+        });
+
+        seriesButtons.forEach((button, index) => {
+          const selected = state.seriesIndex === index;
+          button.classList.toggle("active", selected);
+          button.classList.toggle("running", selected && state.mode === "running");
+          button.classList.toggle("unfocused", selected && state.focusArea !== "series");
+          button.setAttribute("aria-pressed", String(selected));
+          const best = button.querySelector(".series-best");
+          if (best) best.textContent = `Best ${recordTime(series[index].bestTime)}`;
         });
 
         ui.toleranceSetting.classList.toggle("selected", state.focusArea === "settings");
@@ -1003,13 +1512,38 @@
 
       function update(now) {
         const controller = readController();
+        const wasRunning = state.mode === "running";
+        const previousControllerIndex = state.controllerIndex;
+        const previousX = state.x;
+        const previousY = state.y;
         processControllerButtons(controller, now);
-        state.x = controller ? clamp(controller.axes[0]) : 0;
-        state.y = controller ? clamp(controller.axes[1]) : 0;
+        const nextX = controller ? clamp(controller.axes[0]) : 0;
+        const nextY = controller ? clamp(controller.axes[1]) : 0;
+
+        // A fast stroke can cross the center between two gamepad samples.
+        // Process that crossing before evaluating the outgoing part of the stroke.
+        if (wasRunning && state.mode === "running" && controller && previousControllerIndex === controller.index &&
+            Math.hypot(previousX, previousY) > DEADZONE && Math.hypot(nextX, nextY) > DEADZONE) {
+          const dx = nextX - previousX;
+          const dy = nextY - previousY;
+          const lengthSquared = dx * dx + dy * dy;
+          const fraction = lengthSquared > 0 ? -(previousX * dx + previousY * dy) / lengthSquared : -1;
+          const centerX = previousX + fraction * dx;
+          const centerY = previousY + fraction * dy;
+          if (fraction > 0 && fraction < 1 && Math.hypot(centerX, centerY) <= DEADZONE) {
+            state.x = centerX;
+            state.y = centerY;
+            updateTrail(controller);
+            updateExercise(now);
+          }
+        }
+        state.x = nextX;
+        state.y = nextY;
 
         ui.position.style.left = `${50 + state.x * 46}%`;
         ui.position.style.top = `${50 + state.y * 46}%`;
 
+        updateTrail(controller);
         updateExercise(now);
         renderState(now);
         requestAnimationFrame(update);
